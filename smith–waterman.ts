@@ -135,14 +135,14 @@ class SmithWaterman
             {
                 var clonedStacks = lo.cloneDeep(stacks);
                 clonedStacks.value1.push(this.seq1[row - 1]);
-                clonedStacks.value2.push("h");
+                clonedStacks.value2.push("v");
                 result = result.concat(this.TraceSequence(H, new Pair(row - 1, column), clonedStacks));
             }
             if (H[row][column] == H[row][column - 1] + this.gapPenalty)
             {
                 var clonedStacks = lo.cloneDeep(stacks);
-                clonedStacks.value2.push(this.seq1[column - 1]);
-                clonedStacks.value1.push("v");
+                clonedStacks.value1.push("h");
+                clonedStacks.value2.push(this.seq2[column - 1]);
                 result = result.concat(this.TraceSequence(H, new Pair(row, column - 1), clonedStacks));
             }
             if (H[row][column] == H[row - 1][column - 1] + this.mismatchScore)
@@ -150,11 +150,13 @@ class SmithWaterman
                 var clonedStacks = lo.cloneDeep(stacks);
 
                 // different formating
-                // clonedStacks.value1.push("-");
-                // clonedStacks.value2.push("-");
+                clonedStacks.value1.push("-");
+                clonedStacks.value2.push("-");
 
-                clonedStacks.value1.push(this.seq1[row - 1]);
-                clonedStacks.value2.push(this.seq2[column - 1]);
+                // different formating
+                // clonedStacks.value1.push(this.seq1[row - 1]);
+                // clonedStacks.value2.push(this.seq2[column - 1]);
+
                 result = result.concat(this.TraceSequence(H, new Pair(row - 1, column - 1), clonedStacks));
             }
         }
@@ -261,64 +263,91 @@ class Pair<T>
     }
 }
 
+function RunSmithWaterman(
+    sequence1: string,
+    sequence2: string,
+    matchScore: number,
+    mismatchScore: number,
+    gapPenalty: number,
+    expectedScore: number,
+    expectedInitialRow: number,
+    expectedInitialColumn: number)
+{
+    var swRunner = new SmithWaterman(sequence1, sequence2, matchScore, mismatchScore, gapPenalty);
+    
+    if (sequence1.length < 20 && sequence2.length < 20)
+    {
+        console.log(`The input to the function is: ${sequence1} and ${sequence2}`);
+    }
+    
+    console.log(swRunner.Run());
+    assert.equal(swRunner.Score, expectedScore);
+    assert.equal(swRunner.InitialPoint.value1, expectedInitialRow);
+    assert.equal(swRunner.InitialPoint.value2, expectedInitialColumn);
+    console.log();
+} 
+
 /**
  * Main entry to the program.
  */
 function main(): number 
 {
     // Verified by http://rna.informatik.uni-freiburg.de/Teaching/index.jsp?toolName=Smith-Waterman
-    let swRunner = new SmithWaterman("GGGGTTTAAAA", "TGGGTGAAAA", 2, -2, -3);
-    console.log(swRunner.Run());
-    assert.equal(swRunner.Score, 11);
-    assert.equal(swRunner.InitialPoint.value1, 1);
-    assert.equal(swRunner.InitialPoint.value2, 1);
-    console.log();
+    RunSmithWaterman("GGGGTTTAAAA", "TGGGTGAAAA", 2, -2, -3, 11, 1, 1);
 
-    swRunner = new SmithWaterman("TGGGGAAAA", "GGGGTTAAAA", 2, -2, -3);
-    console.log(swRunner.Run());
-    assert.equal(swRunner.Score, 10);
-    assert.equal(swRunner.InitialPoint.value1, 1);
-    assert.equal(swRunner.InitialPoint.value2, 0);
-    console.log();
+    RunSmithWaterman("TGGGGAAAA", "GGGGTTAAAA", 2, -2, -3, 10, 1, 0);
 
-    swRunner = new SmithWaterman("AATCGCGTGTAA", "GAAGTCTAA", 2, -2, -3);
-    console.log(swRunner.Run());
-    assert.equal(swRunner.Score, 8);
-    assert.equal(swRunner.InitialPoint.value1, 6);
-    assert.equal(swRunner.InitialPoint.value2, 3);
+    RunSmithWaterman("GGGGTTAAAA", "TGGGGAAAA", 2, -2, -3, 10, 0, 1);
 
-    swRunner = new SmithWaterman("GAAGTCTAA", "AATCGCGTGTAA", 2, -2, -3);
-    console.log(swRunner.Run());
-    assert.equal(swRunner.Score, 8);
-    assert.equal(swRunner.InitialPoint.value1, 3);
-    assert.equal(swRunner.InitialPoint.value2, 6);
+    RunSmithWaterman("AATCGCGTGTAA", "GAAGTCTAA", 2, -2, -3, 8, 6, 3);
+
+    RunSmithWaterman("GAAGTCTAA", "AATCGCGTGTAA", 2, -2, -3, 8, 3, 6);
 
     var lambdaPhage = fs.readFileSync('lambda_virus.fa', 'utf8');
 
-    // Verified by Bowtie2
-    swRunner = new SmithWaterman(lambdaPhage, "TGAATGCGAACTCCGGGACGCTCAGTAATGTGACGATAGCTGAAAACTGTACGATAAACNGTACGCTGAGGGCAGAAAAAATCGTCGGGGACATTNTAAAGGCGGCGAGCGCGGCTTTTCCG", 2, -2, -3);
-    console.log(swRunner.Run());
-    assert.equal(swRunner.Score, 232);
-    assert.equal(swRunner.InitialPoint.value1, 18400);
-    assert.equal(swRunner.InitialPoint.value2, 0);
+    // Verified by Bowtie2: bowtie2 --local -x lambda_virus -U $BT2_HOME/example/reads/reads_1.fq -S eg3.sam && head eg3.sam
 
-    swRunner = new SmithWaterman("TGAATGCGAACTCCGGGACGCTCAGTAATGTGACGATAGCTGAAAACTGTACGATAAACNGTACGCTGAGGGCAGAAAAAATCGTCGGGGACATTNTAAAGGCGGCGAGCGCGGCTTTTCCG", lambdaPhage, 2, -2, -3);
-    console.log(swRunner.Run());
-    assert.equal(swRunner.Score, 232);
-    assert.equal(swRunner.InitialPoint.value1, 0);
-    assert.equal(swRunner.InitialPoint.value2, 18400);
-    
-    swRunner = new SmithWaterman(lambdaPhage, "NTTNTGATGCGGGCTTGTGGAGTTCAGCCGATCTGACTTATGTCATTACCTATGAAATGTGAGGACGCTATGCCTGTACCAAATCCTACAATGCCGGTGAAAGGTGCCGGGATCACCCTGTGGGTTTATAAGGGGATCGGTGACCCCTACGCGAATCCGCTTTCAGACGTTGACTGGTCGCGTCTGGCAAAAGTTAAAGACCTGACGCCCGGCGAACTGACCGCTGAGNCCTATGACGACAGCTATCTCGATGATGAAGATGCAGACTGGACTGC", 2, -2, -3);
-    console.log(swRunner.Run());
-    assert.equal(swRunner.Score, 526);
-    assert.equal(swRunner.InitialPoint.value1, 8889);
-    assert.equal(swRunner.InitialPoint.value2, 4);
+    // line 1 in reads_1.fq
+    RunSmithWaterman(
+        lambdaPhage,
+        "TGAATGCGAACTCCGGGACGCTCAGTAATGTGACGATAGCTGAAAACTGTACGATAAACNGTACGCTGAGGGCAGAAAAAATCGTCGGGGACATTNTAAAGGCGGCGAGCGCGGCTTTTCCG",
+        2,
+        -2,
+        -3,
+        232,
+        18400,
+        0);
 
-    swRunner = new SmithWaterman("NTTNTGATGCGGGCTTGTGGAGTTCAGCCGATCTGACTTATGTCATTACCTATGAAATGTGAGGACGCTATGCCTGTACCAAATCCTACAATGCCGGTGAAAGGTGCCGGGATCACCCTGTGGGTTTATAAGGGGATCGGTGACCCCTACGCGAATCCGCTTTCAGACGTTGACTGGTCGCGTCTGGCAAAAGTTAAAGACCTGACGCCCGGCGAACTGACCGCTGAGNCCTATGACGACAGCTATCTCGATGATGAAGATGCAGACTGGACTGC", lambdaPhage, 2, -2, -3);
-    console.log(swRunner.Run());
-    assert.equal(swRunner.Score, 526);
-    assert.equal(swRunner.InitialPoint.value1, 4);
-    assert.equal(swRunner.InitialPoint.value2, 8889);
+    RunSmithWaterman(
+        "TGAATGCGAACTCCGGGACGCTCAGTAATGTGACGATAGCTGAAAACTGTACGATAAACNGTACGCTGAGGGCAGAAAAAATCGTCGGGGACATTNTAAAGGCGGCGAGCGCGGCTTTTCCG",
+        lambdaPhage,
+        2,
+        -2,
+        -3,
+        232,
+        0,
+        18400);
+
+    // line 5 in reads_1.fq
+    RunSmithWaterman(
+        lambdaPhage,
+        "NTTNTGATGCGGGCTTGTGGAGTTCAGCCGATCTGACTTATGTCATTACCTATGAAATGTGAGGACGCTATGCCTGTACCAAATCCTACAATGCCGGTGAAAGGTGCCGGGATCACCCTGTGGGTTTATAAGGGGATCGGTGACCCCTACGCGAATCCGCTTTCAGACGTTGACTGGTCGCGTCTGGCAAAAGTTAAAGACCTGACGCCCGGCGAACTGACCGCTGAGNCCTATGACGACAGCTATCTCGATGATGAAGATGCAGACTGGACTGC",
+        2,
+        -2,
+        -3,
+        526,
+        8889,
+        4);
+
+    RunSmithWaterman(
+        "NTTNTGATGCGGGCTTGTGGAGTTCAGCCGATCTGACTTATGTCATTACCTATGAAATGTGAGGACGCTATGCCTGTACCAAATCCTACAATGCCGGTGAAAGGTGCCGGGATCACCCTGTGGGTTTATAAGGGGATCGGTGACCCCTACGCGAATCCGCTTTCAGACGTTGACTGGTCGCGTCTGGCAAAAGTTAAAGACCTGACGCCCGGCGAACTGACCGCTGAGNCCTATGACGACAGCTATCTCGATGATGAAGATGCAGACTGGACTGC",
+        lambdaPhage,
+        2,
+        -2,
+        -3,
+        526,
+        4,
+        8889);
 
     return 0;
 }
