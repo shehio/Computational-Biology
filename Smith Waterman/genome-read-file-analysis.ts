@@ -2,7 +2,9 @@ declare function require(name:string);
 var process = require('process');
 var assert = require('assert');
 var fs = require('fs');
-var plotly = require('plotly')("shehio", "nOqjkyGfnNMgg1F59AWm")
+// Credentials are read from environment variables so they are never committed.
+// Set PLOTLY_USERNAME and PLOTLY_API_KEY before running.
+var plotly = require('plotly')(process.env.PLOTLY_USERNAME, process.env.PLOTLY_API_KEY)
 
 /**
  * Main entry to the program.
