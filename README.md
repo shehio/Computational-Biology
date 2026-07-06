@@ -60,13 +60,18 @@ npx ts-node "smith–waterman.ts"
 ```
 
 `genome-read-file-analysis.ts` uploads a histogram to Plotly and reads your
-credentials from the `PLOTLY_USERNAME` and `PLOTLY_API_KEY` environment variables:
+credentials from the `PLOTLY_USERNAME` and `PLOTLY_API_KEY` environment variables.
+These are supplied from 1Password so no secret is ever written to disk —
+`Smith Waterman/plotly.env` holds only `op://` references, and `op run` injects the
+resolved values into the process environment:
 
 ```bash
-export PLOTLY_USERNAME=your_username
-export PLOTLY_API_KEY=your_api_key
-npx ts-node genome-read-file-analysis.ts
+op run --env-file="Smith Waterman/plotly.env" -- npx ts-node genome-read-file-analysis.ts
 ```
+
+The referenced 1Password item is `Private/plotly` (fields `username`, `api_key`).
+Requires the [1Password CLI](https://developer.1password.com/docs/cli/) signed in.
+If you would rather not use 1Password, export the two variables by hand instead.
 
 ## Data files
 
