@@ -3,3 +3,10 @@ node_modules/
 *.json
 *.js
 .ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
